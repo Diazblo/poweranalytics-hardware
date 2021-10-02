@@ -4,4 +4,5 @@
 .vscode/ipch
 BCKP
 .pio/libdeps/esp32dev/TFT_eSPI
+.pio/build
 

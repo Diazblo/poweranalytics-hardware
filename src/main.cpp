@@ -6,12 +6,13 @@
 const char *host = "poweranalytics";
 
 void setup()
-{
+{   
+    WiFi.mode(WIFI_OFF);
     Serial.begin( 115200 ); /* prepare for possible serial debug */
     lvgl_hmi_init();
     // lv_demo_widgets(); 
 
-
+    delay(5000);
     //ioinit
     //sanitycheck
     //rtcsync

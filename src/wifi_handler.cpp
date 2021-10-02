@@ -91,7 +91,7 @@ const char* root_ca= \
 "-----END CERTIFICATE-----\n";
 
 #include <HTTPClient.h>
-String serverName = "http://192.168.1.106:1880/update-sensor";
+String serverName = "http://www.google.com";
 void pwanl_sync()
 {
   HTTPClient http;
@@ -102,9 +102,9 @@ void pwanl_sync()
   if (httpCode > 0)
   { //Check for the returning code
 
-    String payload = http.getString();
-    DBG.println(httpCode);
-    DBG.println(payload);
+    // String payload = http.getString();
+    // DBG.println(httpCode);
+    // DBG.println(payload);
   }
 
   else

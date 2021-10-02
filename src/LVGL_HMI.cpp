@@ -120,8 +120,8 @@ void lvgl_hmi_init()
 
     // lv_demo_music();
     // lvgl_test();
-    lv_demo_widgets(); 
-    // lv_demo_stress();
+    // lv_demo_widgets(); 
+    lv_demo_stress();
     // lv_demo_benchmark();
 
     xTaskCreatePinnedToCore(codeForTask1, "LVGL", 10000, NULL, 1, &Task1, 0);
