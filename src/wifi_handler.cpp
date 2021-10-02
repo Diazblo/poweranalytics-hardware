@@ -1,4 +1,5 @@
 #include <build_defs.h>
+#include <wifi_handler.h>
 
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 int timeout = 200;       // seconds to run for
@@ -90,29 +91,55 @@ const char* root_ca= \
 "GDeAU/7dIOA1mjbRxwG55tzd8/8dLDoWV9mSOdY=\n" \
 "-----END CERTIFICATE-----\n";
 
+#include <powermonitor.h>
+extern char* powermonitor_sync_data_name[];
+extern double* powermonitor_sync_ptr[];
+extern uint8_t powermonitor_sync_data_no;
+extern powermonitor_data pwanl;
+
 #include <HTTPClient.h>
-String serverName = "http://www.google.com";
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+
+String serverName = "http://poweranalytics.loca.lt/endpoint/";
 void pwanl_sync()
-{
-  HTTPClient http;
+{	
+	powermonitor_sync_data(5, pwanl.instpower, pwanl.totalpower, pwanl.powerfactor, pwanl.avgpower, pwanl.vrms);
+	WiFiClient client;
+	HTTPClient http;
 
-  http.begin(serverName.c_str()); //Specify the URL and certificate
-  int httpCode = http.GET();                                                  //Make the request
+	// Your Domain name with URL path or IP address with path
+	http.begin(client, serverName);
 
-  if (httpCode > 0)
-  { //Check for the returning code
+	// Specify content-type header
+	// http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+	http.addHeader("Content-Type", "application/json");
+	// Data to send with HTTP POST
 
-    // String payload = http.getString();
-    // DBG.println(httpCode);
-    // DBG.println(payload);
-  }
+	String httpRequestData = "{";
+			httpRequestData += "\"api_key\":\"";
+			httpRequestData += String(4658464) + "\",";
 
-  else
-  {
-    Serial.println("Error on HTTP request");
-  }
+		
+		for(uint8_t i=0; i<powermonitor_sync_data_no; i++){
+			httpRequestData += "\"" + String(powermonitor_sync_data_name[i]) + "\":\"" + String(*powermonitor_sync_ptr[i]) + "\",";
+			httpRequestData += String(random(200));
+    	}
 
-  DBG.end(); //Free the resources
+			httpRequestData += "\"cpu\":\"";
+			httpRequestData += String(random(100)) + "\"";
+			httpRequestData += "}";
+
+    Serial.print("HTTP Request data: ");
+	Serial.println(httpRequestData);
+	// Send HTTP POST request
+	int httpResponseCode = http.POST(httpRequestData);
+
+	Serial.print("HTTP Response code: ");
+	Serial.println(httpResponseCode);
+
+	// Free resources
+	http.end();
 }
 
 /*------------------------------------------------------------------------------------------------

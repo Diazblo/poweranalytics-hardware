@@ -53,6 +53,7 @@ void my_disp_flush( lv_disp_drv_t *dispp, const lv_area_t *areaa, lv_color_t *co
 /*Read the touchpad*/
 void my_touchpad_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
 {
+#if 0
     uint16_t touchX, touchY;
 
     // bool touched = tft.getTouch( &touchX, &touchY, 600 );
@@ -85,6 +86,7 @@ void my_touchpad_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
         Serial.print( "\t Data y " );
         Serial.println( touchY );
     }
+#endif
 }
 
 
