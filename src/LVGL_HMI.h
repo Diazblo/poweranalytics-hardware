@@ -14,7 +14,7 @@ static const uint16_t screenHeight = 320;
 
 
 /* LVGL */
-#define BUF_MULT 320 * 50
+#define BUF_MULT 320 * 20
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[ BUF_MULT ];
 
@@ -34,6 +34,6 @@ static lv_color_t buf[ BUF_MULT ];
 
 
 void lvgl_hmi_init();
-
+void lvgl_plot();
 
 #endif /* LVGL_HMI_H */

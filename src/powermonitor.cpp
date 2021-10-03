@@ -32,7 +32,7 @@ void powermonitor_task()
     float Irms            = ph1.Irms;             //extract Irms into Variable
     #endif
 
-    pw_power += 10;
+    pw_power +=10;
     total_power = ( (pw_power*0.01) + (total_power*0.99) );
     
     
