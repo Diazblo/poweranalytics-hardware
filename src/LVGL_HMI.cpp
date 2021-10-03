@@ -50,12 +50,33 @@ void lvgl_plot()
 }
 
 
-void load_screen()
+
+
+static void scroll_begin_event(lv_event_t * e)
 {
+    /*Disable the scroll animations. Triggered when a tab button is clicked */
+    if(lv_event_get_code(e) == LV_EVENT_SCROLL_BEGIN) {
+        lv_anim_t * a = lv_event_get_scroll_anim(e);
+        if(a)  a->time = 0;
+    }
+}
+
+void load_screen()
+{   
+    lv_obj_t *tabview;
+    tabview = lv_tabview_create(lv_scr_act(), LV_DIR_RIGHT, 10);
+    lv_obj_add_event_cb(lv_tabview_get_content(tabview), scroll_begin_event, LV_EVENT_SCROLL_BEGIN, NULL);
+
+    lv_obj_t * tab_btns = lv_tabview_get_tab_btns(tabview);
+    lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "1");
+    lv_obj_t *tab2 = lv_tabview_add_tab(tabview, "2");
+    lv_obj_t *tab3 = lv_tabview_add_tab(tabview, "3");
+
+
     /* Instantaneous Power chart */
-    chart = lv_chart_create(lv_scr_act());
-    lv_obj_set_size(chart, 200, 130);
-    lv_obj_align(chart, LV_ALIGN_TOP_LEFT, 40, 25);
+    chart = lv_chart_create(tab1); //lv_scr_act()
+    lv_obj_set_size(chart, 200, 125);
+    lv_obj_align(chart, LV_ALIGN_TOP_LEFT, 25, 10);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 260);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_X, 0, 20);
     lv_chart_set_update_mode(chart, LV_CHART_UPDATE_MODE_SHIFT);
@@ -72,15 +93,15 @@ void load_screen()
 
     lv_chart_set_zoom_x(chart, 250);
 
-    lv_obj_t *label = lv_label_create(lv_scr_act());
+    lv_obj_t *label = lv_label_create(tab1); //lv_scr_act()
     lv_label_set_text(label, "Instantaneous Power (Watts)");
     lv_obj_align_to(label, chart, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
 
     /* Average Power chart*/
-    chart2 = lv_chart_create(lv_scr_act());
-    lv_obj_set_size(chart2, 200, 130);
-    lv_obj_align(chart2, LV_ALIGN_BOTTOM_LEFT, 40, -10);
+    chart2 = lv_chart_create(tab1); //lv_scr_act()
+    lv_obj_set_size(chart2, 200, 125);
+    lv_obj_align(chart2, LV_ALIGN_BOTTOM_LEFT, 25, 0);
     lv_chart_set_range(chart2, LV_CHART_AXIS_PRIMARY_Y, 0, 200);
     lv_chart_set_range(chart2, LV_CHART_AXIS_PRIMARY_X, 0, 20);
     lv_chart_set_update_mode(chart2, LV_CHART_UPDATE_MODE_SHIFT);
@@ -95,12 +116,12 @@ void load_screen()
 
     ser2 = lv_chart_add_series(chart2, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
     lv_chart_set_zoom_x(chart2, 250);
-    lv_obj_t *label2 = lv_label_create(lv_scr_act());
+    lv_obj_t *label2 = lv_label_create(tab1); //vlv_scr_act()
     lv_label_set_text(label2, "Average Power (Watts)");
     lv_obj_align_to(label2, chart2, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
-
-    
+    lv_obj_clear_flag(lv_tabview_get_content(tabview), LV_OBJ_FLAG_SCROLLABLE);    
+    // lv_obj_scroll_to_view_recursive(label, LV_ANIM_OFF);
     
 }
 
@@ -115,7 +136,7 @@ void codeForTask1(void *parameter)
     for (;;)
     {
         lv_timer_handler();
-        vTaskDelay(1);
+        vTaskDelay(10);
     }
 }
 TaskHandle_t Task2;
@@ -173,6 +194,12 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
     pinMode(YM, OUTPUT);
     touchX = map(touchpad.x, 990, 160, 0, 480);
     touchY = map(touchpad.y, 940, 150, 0, 320);
+
+    if (touchX > screenWidth) touchX=screenWidth-1;
+    else if (touchX < 0) touchX=0;
+    if (touchY > screenHeight) touchY=screenHeight-1;
+    else if (touchY < 0) touchX=0;
+
 
     bool touched = 0;
     if (touchpad.z > 100)
