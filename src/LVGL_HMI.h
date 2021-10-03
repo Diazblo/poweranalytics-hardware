@@ -35,4 +35,5 @@ static lv_color_t buf[ BUF_MULT ];
 
 void lvgl_hmi_init();
 
+
 #endif /* LVGL_HMI_H */

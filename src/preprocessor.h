@@ -13,10 +13,6 @@
 
 
 
-
-
-
-
 // #define var_ptr_arr1(var_ptr1, ...) & var_ptr1 , var_ptr_arr2(__VA_ARGS__)
 // #define var_ptr_arr2(var_ptr2, ...) & var_ptr2 , var_ptr_arr3(__VA_ARGS__)
 // #define var_ptr_arr3(var_ptr3, ...) & var_ptr3 , var_ptr_arr4(__VA_ARGS__)

@@ -1,15 +1,23 @@
 #include <powermonitor.h>
 
 EnergyMonitor ph1;
-powermonitor_data phase1;
+// powermonitor_data phase1;
 
-void powermonitor_init()
+#define MAX_STRUCT_INST 3
+uint8_t struct_ptr_cnt = 0;
+powermonitor_data *struct_ptr_array[MAX_STRUCT_INST];
+
+void powermonitor_init(powermonitor_data * self)
 {
     ph1.voltage(34, 234.26, 1.7);  // Voltage: input pin, calibration, phase_shift
     ph1.current(35, 111.1); 
-
+    struct_ptr_array[struct_ptr_cnt++] = self;
+    
 }
 
+uint8_t pw_power = 0;
+double total_power = 0;
+uint32_t total_power_cnt = 0;
 
 void powermonitor_task()
 {
@@ -24,7 +32,11 @@ void powermonitor_task()
     float Irms            = ph1.Irms;             //extract Irms into Variable
     #endif
 
-
-    phase1.instpower = random(200);
+    pw_power += 10;
+    total_power = ( (pw_power*0.01) + (total_power*0.99) );
+    
+    
+    struct_ptr_array[0] -> instpower = pw_power;
+    struct_ptr_array[0] -> totalpower = total_power;
 
 }

@@ -8,8 +8,13 @@ WiFiManager wm;
 extern const char *host;
 
 #include <ESPmDNS.h>
+#include <powermonitor.h>
+#include <HTTPClient.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
 
-bool pwanl_wifiinit()
+
+bool wifi_init()
 {
   WiFi.mode(WIFI_STA);
   WiFi.begin();
@@ -66,45 +71,16 @@ void start_config_portal()
 }
 
 
+// wifi_handler::wifi_handler(void)
+// {
+//   // powermonitorno = 0;
+// }
 
-
-
-
-
-
-
-const char* root_ca= \
-"-----BEGIN CERTIFICATE-----\n" \
-"MIICiTCCAg+gAwIBAgIQH0evqmIAcFBUTAGem2OZKjAKBggqhkjOPQQDAzCBhTEL\n" \
-"MAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UE\n" \
-"BxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxKzApBgNVBAMT\n" \
-"IkNPTU9ETyBFQ0MgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwHhcNMDgwMzA2MDAw\n" \
-"MDAwWhcNMzgwMTE4MjM1OTU5WjCBhTELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdy\n" \
-"ZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UEChMRQ09N\n" \
-"T0RPIENBIExpbWl0ZWQxKzApBgNVBAMTIkNPTU9ETyBFQ0MgQ2VydGlmaWNhdGlv\n" \
-"biBBdXRob3JpdHkwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQDR3svdcmCFYX7deSR\n" \
-"FtSrYpn1PlILBs5BAH+X4QokPB0BBO490o0JlwzgdeT6+3eKKvUDYEs2ixYjFq0J\n" \
-"cfRK9ChQtP6IHG4/bC8vCVlbpVsLM5niwz2J+Wos77LTBumjQjBAMB0GA1UdDgQW\n" \
-"BBR1cacZSBm8nZ3qQUfflMRId5nTeTAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/\n" \
-"BAUwAwEB/zAKBggqhkjOPQQDAwNoADBlAjEA7wNbeqy3eApyt4jf/7VGFAkK+qDm\n" \
-"fQjGGoe9GKhzvSbKYAydzpmfz1wPMOG+FDHqAjAU9JM8SaczepBGR7NjfRObTrdv\n" \
-"GDeAU/7dIOA1mjbRxwG55tzd8/8dLDoWV9mSOdY=\n" \
-"-----END CERTIFICATE-----\n";
-
-#include <powermonitor.h>
-extern char* powermonitor_sync_data_name[];
-extern double* powermonitor_sync_ptr[];
-extern uint8_t powermonitor_sync_data_no;
-extern powermonitor_data pwanl;
-
-#include <HTTPClient.h>
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
-
-String serverName = "http://poweranalytics.loca.lt/endpoint/";
-void pwanl_sync()
+void wifi_handler::pwanl_sync()
 {	
-	powermonitor_sync_data(5, pwanl.instpower, pwanl.totalpower, pwanl.powerfactor, pwanl.avgpower, pwanl.vrms);
+  
+  // powermonitor_sync_data_add(pwanl.instpower);
+
 	WiFiClient client;
 	HTTPClient http;
 
@@ -117,20 +93,19 @@ void pwanl_sync()
 	// Data to send with HTTP POST
 
 	String httpRequestData = "{";
-			httpRequestData += "\"api_key\":\"";
-			httpRequestData += String(4658464) + "\",";
+    httpRequestData += "\"api_key\":\"";
+    httpRequestData += String(4658464) + "\",";
 
 		
-		for(uint8_t i=0; i<powermonitor_sync_data_no; i++){
-			httpRequestData += "\"" + String(powermonitor_sync_data_name[i]) + "\":\"" + String(*powermonitor_sync_ptr[i]) + "\",";
-			httpRequestData += String(random(200));
+		for(uint8_t i=0; i<powermonitorno; i++){
+			httpRequestData += "\"" + String(powermonitor_sync_data_name[i][10]) + "\":\"" + String(*powermonitor_sync_ptr[i]) + "\",";
     	}
 
-			httpRequestData += "\"cpu\":\"";
-			httpRequestData += String(random(100)) + "\"";
-			httpRequestData += "}";
+    httpRequestData += "\"cpu\":\"";
+    httpRequestData += String(random(100)) + "\"";
+    httpRequestData += "}";
 
-    Serial.print("HTTP Request data: ");
+  Serial.print("HTTP Request data: ");
 	Serial.println(httpRequestData);
 	// Send HTTP POST request
 	int httpResponseCode = http.POST(httpRequestData);
@@ -141,6 +116,9 @@ void pwanl_sync()
 	// Free resources
 	http.end();
 }
+
+
+
 
 /*------------------------------------------------------------------------------------------------
 // #include <ESPmDNS.h>
