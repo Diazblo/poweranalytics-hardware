@@ -17,6 +17,7 @@ void powermonitor_init(powermonitor_data * self)
 
 uint8_t pw_power = 0;
 double total_power = 0;
+double avg_power = 0;
 uint32_t total_power_cnt = 0;
 
 void powermonitor_task()
@@ -33,10 +34,12 @@ void powermonitor_task()
     #endif
 
     pw_power = random(0, 250);
-    total_power = ( (pw_power*0.01) + (total_power*0.99) );
+    avg_power = ( (pw_power*0.01) + (avg_power*0.99) );
+    total_power += 0.0002*pw_power;
     
     
-    struct_ptr_array[0] -> instpower = pw_power;
+    struct_ptr_array[0] -> instpower  = pw_power;
+    struct_ptr_array[0] -> avgpower   = avg_power;
     struct_ptr_array[0] -> totalpower = total_power;
 
 }

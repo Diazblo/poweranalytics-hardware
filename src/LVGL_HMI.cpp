@@ -14,6 +14,17 @@ static lv_chart_series_t *ser2;
 static lv_chart_cursor_t *cursor2;
 
 
+
+#define PARAMS_PANEL_X 240
+#define PARAMS_PANEL_Y 15
+#define PARAMS_PANEL_Y_DIST 36
+#define PARAMS_LABEL_DIST 120
+lv_obj_t * params_panel[3];
+lv_obj_t * params_label[3];
+static lv_style_t style_common;
+static lv_style_t style_params;
+
+
 bool pause_plot = 0;
 unsigned long pause_plot_wait = 0;
 
@@ -37,7 +48,10 @@ void lvgl_plot()
         lv_chart_refresh(chart);
         lv_chart_refresh(chart2);
         lv_chart_set_next_value(chart, ser, pwanl.instpower);
-        lv_chart_set_next_value(chart, ser2, pwanl.totalpower);
+        lv_chart_set_next_value(chart, ser2, pwanl.avgpower);
+        lv_label_set_text_fmt(params_panel[0], ":%d", (int)pwanl.instpower);
+        lv_label_set_text_fmt(params_panel[1], ":%d", (int)pwanl.avgpower);
+        lv_label_set_text_fmt(params_panel[2], ":%d", (int)pwanl.totalpower);
     }
     else if ((millis() > pause_plot_wait + 5000))
     {
@@ -86,6 +100,8 @@ void load_screen()
     // lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 1, 10, 5, true, 20);
     cursor = lv_chart_add_cursor(chart, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_LEFT | LV_DIR_BOTTOM);
 
+    /*Do not display points on the data*/
+    lv_obj_set_style_size(chart, 0, LV_PART_INDICATOR);
     lv_obj_add_event_cb(chart, lvgl_pause_plot, LV_EVENT_CLICKED, NULL);
     lv_obj_refresh_ext_draw_size(chart);
 
@@ -111,6 +127,8 @@ void load_screen()
     // lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 1, 10, 5, true, 20);
     cursor2 = lv_chart_add_cursor(chart2, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_LEFT | LV_DIR_BOTTOM);
 
+    /*Do not display points on the data*/
+    lv_obj_set_style_size(chart2, 0, LV_PART_INDICATOR);
     lv_obj_add_event_cb(chart2, lvgl_pause_plot, LV_EVENT_CLICKED, NULL);
     lv_obj_refresh_ext_draw_size(chart2);
 
@@ -122,7 +140,50 @@ void load_screen()
 
     lv_obj_clear_flag(lv_tabview_get_content(tabview), LV_OBJ_FLAG_SCROLLABLE);    
     // lv_obj_scroll_to_view_recursive(label, LV_ANIM_OFF);
+
+
+
+
+
+
+    if 1
+    /* Text panels */
+
+    // STYLE
+    lv_style_init(&style_common);
+    // lv_style_set_bg_color(&style_common, lv_color_white());
+    // lv_style_set_bg_opa(&style_common, LV_OPA_50);
+    lv_style_set_border_width(&style_common, 2);
+    lv_style_set_border_color(&style_common, lv_color_black());
+    lv_style_set_text_font(&style_common, &lv_font_montserrat_28);
+
+    lv_style_init(&style_params);
+    // lv_style_set_bg_color(&style_params, lv_color_white());
+    // lv_style_set_bg_opa(&style_params, LV_OPA_50);
+    // lv_style_set_border_width(&style_params, 2);
+    // lv_style_set_border_color(&style_params, lv_color_black());
+    lv_style_set_text_font(&style_params, &lv_font_montserrat_32);
+
+
+
+    for(uint8_t nnn = 0; nnn<3; nnn++){
+        params_panel[nnn] = lv_label_create(tab1);
+        lv_obj_set_x(params_panel[nnn], PARAMS_PANEL_X + PARAMS_LABEL_DIST);
+        lv_obj_set_y(params_panel[nnn], PARAMS_PANEL_Y + (nnn*PARAMS_PANEL_Y_DIST) + 3);
+        lv_obj_add_style(params_panel[nnn],&style_params, 0);
+
+        params_label[nnn] = lv_label_create(tab1);
+        lv_obj_set_x(params_label[nnn], PARAMS_PANEL_X);
+        lv_obj_set_y(params_label[nnn], PARAMS_PANEL_Y + (nnn*PARAMS_PANEL_Y_DIST));
+        lv_obj_add_style(params_label[nnn],&style_common, 0);
+
+        
+    }
+    lv_label_set_text_fmt(params_label[0], "Power");
+    lv_label_set_text_fmt(params_label[1], "Average");
+    lv_label_set_text_fmt(params_label[2], "Total");
     
+    #endif
 }
 
 
