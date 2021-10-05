@@ -14,15 +14,22 @@ static lv_chart_series_t *ser2;
 static lv_chart_cursor_t *cursor2;
 
 
+#ifdef LABEL
+#endif
 
 #define PARAMS_PANEL_X 240
-#define PARAMS_PANEL_Y 15
+#define PARAMS_PANEL_Y 10
 #define PARAMS_PANEL_Y_DIST 36
 #define PARAMS_LABEL_DIST 120
+
+#ifdef LABEL
 lv_obj_t * params_panel[3];
 lv_obj_t * params_label[3];
 static lv_style_t style_common;
 static lv_style_t style_params;
+#else
+lv_obj_t * table;
+#endif
 
 
 bool pause_plot = 0;
@@ -36,7 +43,8 @@ void lvgl_pause_plot(lv_event_t * event)
     lv_chart_set_zoom_x(chart2, 500);
 
 }
-
+uint8_t plot_div = 0;
+uint16_t peak_power = 0;
 void lvgl_plot()
 {
     // for(uint8_t i=0; i<powermonitorno; i++){
@@ -44,22 +52,41 @@ void lvgl_plot()
     //     }
 
     if (!pause_plot)
-    {
-        lv_chart_refresh(chart);
-        lv_chart_refresh(chart2);
-        lv_chart_set_next_value(chart, ser, pwanl.instpower);
-        lv_chart_set_next_value(chart, ser2, pwanl.avgpower);
+    {   
+        #ifdef LABEL
         lv_label_set_text_fmt(params_panel[0], ":%d", (int)pwanl.instpower);
-        lv_label_set_text_fmt(params_panel[1], ":%d", (int)pwanl.avgpower);
+        lv_label_set_text_fmt(params_panel[1], ":%d", );
         lv_label_set_text_fmt(params_panel[2], ":%d", (int)pwanl.totalpower);
+        #else
+        lv_table_set_cell_value_fmt(table, 0, 1, "%d", (int)pwanl.instpower);
+        lv_table_set_cell_value_fmt(table, 1, 1, "%d", (int)pwanl.avgpower);
+        lv_table_set_cell_value_fmt(table, 2, 1, "%d", (int)pwanl.totalpower);
+        
+        lv_obj_invalidate(table); //workaround to update table
+        // lv_event_send(table, LV_EVENT_DRAW_PART_END, NULL);
+        // refr_size(table);
+        #endif
+
+
+        if (pwanl.instpower > peak_power)peak_power = pwanl.instpower;
+        if(! plot_div-- ){
+            plot_div = 10;
+            lv_chart_set_next_value(chart, ser, peak_power);
+            lv_chart_set_next_value(chart, ser2, pwanl.avgpower);
+            peak_power = 0;
+            lv_chart_refresh(chart);
+            lv_chart_refresh(chart2);
+        }
+
+
     }
     else if ((millis() > pause_plot_wait + 5000))
     {
         pause_plot = 0;
         lv_chart_set_zoom_x(chart, 250);
         lv_chart_set_zoom_x(chart2, 250);
-        lv_obj_scroll_to_x(chart, 0, LV_ANIM_OFF);
-        lv_obj_scroll_to_x(chart2, 0, LV_ANIM_OFF);
+        lv_obj_scroll_to_x(chart, 0, LV_ANIM_ON);
+        lv_obj_scroll_to_x(chart2, 0, LV_ANIM_ON);
     }
 }
 
@@ -87,11 +114,12 @@ void load_screen()
     lv_obj_t *tab3 = lv_tabview_add_tab(tabview, "3");
 
 
+    
     /* Instantaneous Power chart */
     chart = lv_chart_create(tab1); //lv_scr_act()
     lv_obj_set_size(chart, 200, 125);
     lv_obj_align(chart, LV_ALIGN_TOP_LEFT, 25, 10);
-    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 260);
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_X, 0, 20);
     lv_chart_set_update_mode(chart, LV_CHART_UPDATE_MODE_SHIFT);
     // lv_chart_set_x_start_point(chart, ser, 20);
@@ -110,7 +138,7 @@ void load_screen()
     lv_chart_set_zoom_x(chart, 250);
 
     lv_obj_t *label = lv_label_create(tab1); //lv_scr_act()
-    lv_label_set_text(label, "Instantaneous Power (Watts)");
+    lv_label_set_text(label, "Peak Power (Watts)");
     lv_obj_align_to(label, chart, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
 
@@ -118,7 +146,7 @@ void load_screen()
     chart2 = lv_chart_create(tab1); //lv_scr_act()
     lv_obj_set_size(chart2, 200, 125);
     lv_obj_align(chart2, LV_ALIGN_BOTTOM_LEFT, 25, 0);
-    lv_chart_set_range(chart2, LV_CHART_AXIS_PRIMARY_Y, 0, 200);
+    lv_chart_set_range(chart2, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
     lv_chart_set_range(chart2, LV_CHART_AXIS_PRIMARY_X, 0, 20);
     lv_chart_set_update_mode(chart2, LV_CHART_UPDATE_MODE_SHIFT);
     // lv_chart_set_x_start_point(chart, ser2, 20);
@@ -135,7 +163,7 @@ void load_screen()
     ser2 = lv_chart_add_series(chart2, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
     lv_chart_set_zoom_x(chart2, 250);
     lv_obj_t *label2 = lv_label_create(tab1); //vlv_scr_act()
-    lv_label_set_text(label2, "Average Power (Watts)");
+    lv_label_set_text(label2, "RMS Power (Watts)");
     lv_obj_align_to(label2, chart2, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
     lv_obj_clear_flag(lv_tabview_get_content(tabview), LV_OBJ_FLAG_SCROLLABLE);    
@@ -143,12 +171,12 @@ void load_screen()
 
 
 
+   
 
 
 
-    if 1
+    #ifdef LABEL
     /* Text panels */
-
     // STYLE
     lv_style_init(&style_common);
     // lv_style_set_bg_color(&style_common, lv_color_white());
@@ -163,8 +191,6 @@ void load_screen()
     // lv_style_set_border_width(&style_params, 2);
     // lv_style_set_border_color(&style_params, lv_color_black());
     lv_style_set_text_font(&style_params, &lv_font_montserrat_32);
-
-
 
     for(uint8_t nnn = 0; nnn<3; nnn++){
         params_panel[nnn] = lv_label_create(tab1);
@@ -182,7 +208,40 @@ void load_screen()
     lv_label_set_text_fmt(params_label[0], "Power");
     lv_label_set_text_fmt(params_label[1], "Average");
     lv_label_set_text_fmt(params_label[2], "Total");
+    #else
+
+     /* Text Table*/
+    table = lv_table_create(tab1);
+    lv_obj_set_height(table, 278);
+    lv_obj_set_width(table, 193);
+    lv_table_set_col_width(table, 0, 96);
+    lv_table_set_col_width(table, 1, 193-100);
+    // lv_table_set_row_(table, 0, 100);
+    lv_obj_add_flag(table, LV_STYLE_LINE_ROUNDED);
+    lv_obj_set_scrollbar_mode(table, LV_SCROLLBAR_MODE_OFF);
+
     
+    lv_table_set_cell_value(table, 0, 0, "Power");
+    lv_table_set_cell_value(table, 1, 0, "RMS");
+    lv_table_set_cell_value(table, 2, 0, "Total");
+    lv_table_set_cell_value(table, 3, 0, "Pf (0)");
+
+    lv_table_set_cell_value(table, 0, 1, "0");
+    lv_table_set_cell_value(table, 1, 1, "0");
+    lv_table_set_cell_value(table, 2, 1, "10");
+    lv_table_set_cell_value(table, 3, 1, "10");
+
+
+    /* Style */
+    static lv_style_t style_common;
+    lv_style_init(&style_common);
+    
+    lv_style_set_text_font(&style_common, &lv_font_montserrat_20);
+    lv_obj_add_style(table, &style_common, 0);
+
+    lv_obj_set_x(table, PARAMS_PANEL_X);
+    lv_obj_set_y(table, PARAMS_PANEL_Y);
+
     #endif
 }
 

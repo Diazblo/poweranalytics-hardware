@@ -15,10 +15,12 @@ void powermonitor_init(powermonitor_data * self)
     
 }
 
-uint8_t pw_power = 0;
+uint16_t pw_power = 0;
 double total_power = 0;
 double avg_power = 0;
 uint32_t total_power_cnt = 0;
+double  total_kwh = 0;
+#define RATE_MULT 0.01666667 *3600
 
 void powermonitor_task()
 {
@@ -33,13 +35,27 @@ void powermonitor_task()
     float Irms            = ph1.Irms;             //extract Irms into Variable
     #endif
 
-    pw_power = random(0, 250);
-    avg_power = ( (pw_power*0.01) + (avg_power*0.99) );
-    total_power += 0.0002*pw_power;
-    
-    
+    pw_power = random(0, 700);
+    if((total_power_cnt >30000)) pw_power = random(1000, 1600);
+    avg_power = ( (pw_power*0.1) + (avg_power*0.9) );
+
+    total_power_cnt++; //add first to start with 1
+    double total_power_frac = (double)(total_power_cnt-1)/total_power_cnt;
+
+    total_power = ((double)pw_power/total_power_cnt) + total_power*total_power_frac;
+
+    double multt = (total_power_cnt)/(RATE_MULT);
+    total_kwh = total_power * multt;
+
+    if(!(total_power_cnt % 100)){
+    Serial.printf("a:%d \tb:%d  \tc:%f \td%f\n", pw_power, total_power_cnt, total_power, total_power_frac);
+    Serial.printf("d:%f \te:%f\n\n", multt, total_kwh);
+    }
+
+
+
     struct_ptr_array[0] -> instpower  = pw_power;
     struct_ptr_array[0] -> avgpower   = avg_power;
-    struct_ptr_array[0] -> totalpower = total_power;
-
+    struct_ptr_array[0] -> totalpower = total_kwh/1000;
+    // Serial.printf("total average: %f\talt: %f \t%d \n", total_power, total_power_frac, total_power_cnt);
 }

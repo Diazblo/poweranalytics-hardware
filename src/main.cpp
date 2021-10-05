@@ -50,7 +50,7 @@ void loop()
         lvgl_plot(), syncinterval = millis();
 
 
-    delay(50);
+    delay(1);
 }
 
 
