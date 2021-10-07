@@ -22,7 +22,7 @@ void powermonitor_init(powermonitor_data * self)
     emon_ptr[struct_ptr_cnt].voltage(34, 234.26, 1.7);  // Voltage: input pin, calibration, phase_shift
     emon_ptr[struct_ptr_cnt].current(35, 111.1); 
     struct_ptr_array[struct_ptr_cnt++] = self;
-    // xTaskCreatePinnedToCore(powermonitortask, "powermonitor", 10000, NULL, 1, &Task_powermonitor, 0);
+    xTaskCreatePinnedToCore(powermonitortask, "powermonitor", 10000, NULL, 1, &Task_powermonitor, 0);
 }
 
 uint16_t pw_power = 0;
@@ -42,8 +42,11 @@ void powermonitor_task()
     float Irms            = ph1.Irms;             //extract Irms into Variable
     #endif
 
-    pw_power = random(0, 700);
-    if((total_power_cnt >30000)) pw_power = random(1000, 1600);
+    // pw_power = random(0, 700);
+    // if(!(total_power_cnt % 20)) pw_power = random(1000, 1600);
+
+    pw_power = emon_ptr[0].Vrms;
+
     avg_power = ( (pw_power*0.1) + (avg_power*0.9) );
 
     total_power_cnt++; //add first to start with 1
