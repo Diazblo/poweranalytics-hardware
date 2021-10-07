@@ -118,7 +118,12 @@ lv_event_code_t lv_event_get_code(lv_event_t * e)
     return e->code;
 }
 
-lv_coord_t * lv_event_get_param(lv_event_t * e)
+// lv_coord_t * lv_event_get_param(lv_event_t * e)
+// {
+//     return e->param;
+// }
+
+lv_obj_draw_part_dsc_t * lv_event_get_param(lv_event_t * e)
 {
     return e->param;
 }

@@ -168,7 +168,13 @@ lv_event_code_t lv_event_get_code(lv_event_t * e);
  * @param e     pointer to the event descriptor
  * @return      pointer to the parameter
  */
-lv_coord_t * lv_event_get_param(lv_event_t * e);
+// lv_coord_t * lv_event_get_param(lv_event_t * e);
+/**
+ * Get the parameter passed when the event was sent
+ * @param e     pointer to the event descriptor
+ * @return      pointer to the parameter
+ */
+lv_obj_draw_part_dsc_t * lv_event_get_param(lv_event_t * e);
 
 /**
  * Get the user_data passed when the event was registered on the object

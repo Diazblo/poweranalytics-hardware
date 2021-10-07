@@ -1,18 +1,28 @@
 #include <powermonitor.h>
 
-EnergyMonitor ph1;
 // powermonitor_data phase1;
 
 #define MAX_STRUCT_INST 3
 uint8_t struct_ptr_cnt = 0;
 powermonitor_data *struct_ptr_array[MAX_STRUCT_INST];
 
+EnergyMonitor emon_ptr[MAX_STRUCT_INST];
+
+TaskHandle_t Task_powermonitor;
+void powermonitortask(void *parameter)
+{
+    for (;;)
+    {
+        emon_ptr[0].calcVI(20,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
+        emon_ptr[0].serialprint();           // Print out all variables (realpower, apparent power, ., Irms, power factor)
+    }
+}
 void powermonitor_init(powermonitor_data * self)
 {
-    ph1.voltage(34, 234.26, 1.7);  // Voltage: input pin, calibration, phase_shift
-    ph1.current(35, 111.1); 
+    emon_ptr[struct_ptr_cnt].voltage(34, 234.26, 1.7);  // Voltage: input pin, calibration, phase_shift
+    emon_ptr[struct_ptr_cnt].current(35, 111.1); 
     struct_ptr_array[struct_ptr_cnt++] = self;
-    
+    // xTaskCreatePinnedToCore(powermonitortask, "powermonitor", 10000, NULL, 1, &Task_powermonitor, 0);
 }
 
 uint16_t pw_power = 0;
@@ -25,9 +35,6 @@ double  total_kwh = 0;
 void powermonitor_task()
 {
     #if 0
-    ph1.calcVI(20,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
-    ph1.serialprint();           // Print out all variables (realpower, apparent power, Vrms, Irms, power factor)
-
     float realPower       = ph1.realPower;        //extract Real Power into variable
     float apparentPower   = ph1.apparentPower;    //extract Apparent Power into variable
     float powerFActor     = ph1.powerFactor;      //extract Power Factor into Variable

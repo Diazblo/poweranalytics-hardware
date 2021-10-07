@@ -5,14 +5,15 @@ extern powermonitor_data pwanl;
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 0);
 TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
 
-
-static lv_obj_t *chart;
-static lv_chart_series_t *ser;
+// #define INDEPENDANTFLUSHING
+static lv_obj_t *tab1_chart;
+static lv_chart_series_t *tab1_ser;
 static lv_chart_cursor_t *cursor;
-static lv_obj_t *chart2;
-static lv_chart_series_t *ser2;
+static lv_obj_t *tab1_chart2;
+static lv_chart_series_t *tab1_ser2;
 static lv_chart_cursor_t *cursor2;
 
+lv_obj_t * tab2_chart;
 
 #ifdef LABEL
 #endif
@@ -39,8 +40,10 @@ void lvgl_pause_plot(lv_event_t * event)
 {
     pause_plot = 1;
     pause_plot_wait = millis();
-    lv_chart_set_zoom_x(chart, 500);
-    lv_chart_set_zoom_x(chart2, 500);
+    lv_chart_set_zoom_x(tab1_chart, 500);
+    lv_chart_set_zoom_x(tab1_chart2, 500);
+    lv_obj_scroll_to_x(tab1_chart, 200, LV_ANIM_ON);
+    lv_obj_scroll_to_x(tab1_chart2, 200, LV_ANIM_ON);
 
 }
 uint8_t plot_div = 0;
@@ -71,11 +74,11 @@ void lvgl_plot()
         if (pwanl.instpower > peak_power)peak_power = pwanl.instpower;
         if(! plot_div-- ){
             plot_div = 10;
-            lv_chart_set_next_value(chart, ser, peak_power);
-            lv_chart_set_next_value(chart, ser2, pwanl.avgpower);
+            lv_chart_set_next_value(tab1_chart, tab1_ser, peak_power);
+            lv_chart_set_next_value(tab1_chart, tab1_ser2, pwanl.avgpower);
             peak_power = 0;
-            lv_chart_refresh(chart);
-            lv_chart_refresh(chart2);
+            lv_chart_refresh(tab1_chart);
+            lv_chart_refresh(tab1_chart2);
         }
 
 
@@ -83,15 +86,24 @@ void lvgl_plot()
     else if ((millis() > pause_plot_wait + 5000))
     {
         pause_plot = 0;
-        lv_chart_set_zoom_x(chart, 250);
-        lv_chart_set_zoom_x(chart2, 250);
-        lv_obj_scroll_to_x(chart, 0, LV_ANIM_ON);
-        lv_obj_scroll_to_x(chart2, 0, LV_ANIM_ON);
+        lv_chart_set_zoom_x(tab1_chart, 250);
+        lv_chart_set_zoom_x(tab1_chart2, 250);
+        lv_obj_scroll_to_x(tab1_chart, 0, LV_ANIM_ON);
+        lv_obj_scroll_to_x(tab1_chart2, 0, LV_ANIM_ON);
     }
 }
 
 
 
+void draw_event_cb(lv_event_t * e)
+{
+    lv_obj_draw_part_dsc_t * dsc = lv_event_get_param(e);
+
+    if(dsc->part == LV_PART_TICKS && dsc->id == LV_CHART_AXIS_PRIMARY_X) {
+        const char * month[] = {"Jan", "Febr", "March", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
+        lv_snprintf(dsc->text, sizeof(dsc->text), "%s", month[dsc->value]);
+    }
+}
 
 static void scroll_begin_event(lv_event_t * e)
 {
@@ -109,62 +121,64 @@ void load_screen()
     lv_obj_add_event_cb(lv_tabview_get_content(tabview), scroll_begin_event, LV_EVENT_SCROLL_BEGIN, NULL);
 
     lv_obj_t * tab_btns = lv_tabview_get_tab_btns(tabview);
-    lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "1");
-    lv_obj_t *tab2 = lv_tabview_add_tab(tabview, "2");
-    lv_obj_t *tab3 = lv_tabview_add_tab(tabview, "3");
+    lv_obj_t *tab1 = lv_tabview_add_tab(tabview, " ");
+    lv_obj_t *tab2 = lv_tabview_add_tab(tabview, " ");
+    lv_obj_t *tab3 = lv_tabview_add_tab(tabview, " ");
 
 
-    
+    /*
+    * TAB 1
+    */
     /* Instantaneous Power chart */
-    chart = lv_chart_create(tab1); //lv_scr_act()
-    lv_obj_set_size(chart, 200, 125);
-    lv_obj_align(chart, LV_ALIGN_TOP_LEFT, 25, 10);
-    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
-    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_X, 0, 20);
-    lv_chart_set_update_mode(chart, LV_CHART_UPDATE_MODE_SHIFT);
-    // lv_chart_set_x_start_point(chart, ser, 20);
-    lv_chart_set_point_count(chart, 20);
-    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 5, 3, 6, 5, true, 40);
-    // lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 1, 10, 5, true, 20);
-    cursor = lv_chart_add_cursor(chart, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_LEFT | LV_DIR_BOTTOM);
+    tab1_chart = lv_chart_create(tab1); //lv_scr_act()
+    lv_obj_set_size(tab1_chart, 200, 125);
+    lv_obj_align(tab1_chart, LV_ALIGN_TOP_LEFT, 25, 10);
+    lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
+    lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_X, 0, 20);
+    lv_chart_set_update_mode(tab1_chart, LV_CHART_UPDATE_MODE_SHIFT);
+    // lv_chart_set_x_start_point(tab1_chart, tab1_ser, 20);
+    lv_chart_set_point_count(tab1_chart, 20);
+    lv_chart_set_axis_tick(tab1_chart, LV_CHART_AXIS_PRIMARY_Y, 5, 3, 6, 5, true, 40);
+    // lv_chart_set_axis_tick(tab1_chart, LV_CHART_AXIS_PRIMARY_X, 5, 1, 10, 5, true, 20);
+    cursor = lv_chart_add_cursor(tab1_chart, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_LEFT | LV_DIR_BOTTOM);
 
     /*Do not display points on the data*/
-    lv_obj_set_style_size(chart, 0, LV_PART_INDICATOR);
-    lv_obj_add_event_cb(chart, lvgl_pause_plot, LV_EVENT_CLICKED, NULL);
-    lv_obj_refresh_ext_draw_size(chart);
+    lv_obj_set_style_size(tab1_chart, 0, LV_PART_INDICATOR);
+    lv_obj_add_event_cb(tab1_chart, lvgl_pause_plot, LV_EVENT_RELEASED, NULL);
+    lv_obj_refresh_ext_draw_size(tab1_chart);
 
-    ser = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+    tab1_ser = lv_chart_add_series(tab1_chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
 
-    lv_chart_set_zoom_x(chart, 250);
+    lv_chart_set_zoom_x(tab1_chart, 250);
 
     lv_obj_t *label = lv_label_create(tab1); //lv_scr_act()
     lv_label_set_text(label, "Peak Power (Watts)");
-    lv_obj_align_to(label, chart, LV_ALIGN_OUT_TOP_MID, 0, -5);
+    lv_obj_align_to(label, tab1_chart, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
 
     /* Average Power chart*/
-    chart2 = lv_chart_create(tab1); //lv_scr_act()
-    lv_obj_set_size(chart2, 200, 125);
-    lv_obj_align(chart2, LV_ALIGN_BOTTOM_LEFT, 25, 0);
-    lv_chart_set_range(chart2, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
-    lv_chart_set_range(chart2, LV_CHART_AXIS_PRIMARY_X, 0, 20);
-    lv_chart_set_update_mode(chart2, LV_CHART_UPDATE_MODE_SHIFT);
-    // lv_chart_set_x_start_point(chart, ser2, 20);
-    lv_chart_set_point_count(chart2, 20);
-    lv_chart_set_axis_tick(chart2, LV_CHART_AXIS_PRIMARY_Y, 5, 3, 6, 5, true, 40);
-    // lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 1, 10, 5, true, 20);
-    cursor2 = lv_chart_add_cursor(chart2, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_LEFT | LV_DIR_BOTTOM);
+    tab1_chart2 = lv_chart_create(tab1); //lv_scr_act()
+    lv_obj_set_size(tab1_chart2, 200, 125);
+    lv_obj_align(tab1_chart2, LV_ALIGN_BOTTOM_LEFT, 25, 0);
+    lv_chart_set_range(tab1_chart2, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
+    lv_chart_set_range(tab1_chart2, LV_CHART_AXIS_PRIMARY_X, 0, 20);
+    lv_chart_set_update_mode(tab1_chart2, LV_CHART_UPDATE_MODE_SHIFT);
+    // lv_chart_set_x_start_point(tab1_chart, tab1_ser2, 20);
+    lv_chart_set_point_count(tab1_chart2, 20);
+    lv_chart_set_axis_tick(tab1_chart2, LV_CHART_AXIS_PRIMARY_Y, 5, 3, 6, 5, true, 40);
+    // lv_chart_set_axis_tick(tab1_chart, LV_CHART_AXIS_PRIMARY_X, 5, 1, 10, 5, true, 20);
+    cursor2 = lv_chart_add_cursor(tab1_chart2, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_LEFT | LV_DIR_BOTTOM);
 
     /*Do not display points on the data*/
-    lv_obj_set_style_size(chart2, 0, LV_PART_INDICATOR);
-    lv_obj_add_event_cb(chart2, lvgl_pause_plot, LV_EVENT_CLICKED, NULL);
-    lv_obj_refresh_ext_draw_size(chart2);
+    lv_obj_set_style_size(tab1_chart2, 0, LV_PART_INDICATOR);
+    lv_obj_add_event_cb(tab1_chart2, lvgl_pause_plot, LV_EVENT_RELEASED, NULL);
+    lv_obj_refresh_ext_draw_size(tab1_chart2);
 
-    ser2 = lv_chart_add_series(chart2, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
-    lv_chart_set_zoom_x(chart2, 250);
+    tab1_ser2 = lv_chart_add_series(tab1_chart2, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_set_zoom_x(tab1_chart2, 250);
     lv_obj_t *label2 = lv_label_create(tab1); //vlv_scr_act()
     lv_label_set_text(label2, "RMS Power (Watts)");
-    lv_obj_align_to(label2, chart2, LV_ALIGN_OUT_TOP_MID, 0, -5);
+    lv_obj_align_to(label2, tab1_chart2, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
     lv_obj_clear_flag(lv_tabview_get_content(tabview), LV_OBJ_FLAG_SCROLLABLE);    
     // lv_obj_scroll_to_view_recursive(label, LV_ANIM_OFF);
@@ -173,7 +187,7 @@ void load_screen()
 
    
 
-
+    
 
     #ifdef LABEL
     /* Text panels */
@@ -243,6 +257,65 @@ void load_screen()
     lv_obj_set_y(table, PARAMS_PANEL_Y);
 
     #endif
+
+
+
+    /*
+    * TAB 2
+    */
+    
+    tab2_chart = lv_chart_create( tab2);
+    lv_obj_set_size(tab2_chart, 480-100, 320-100);
+    lv_obj_center(tab2_chart);
+    lv_chart_set_type(tab2_chart, LV_CHART_TYPE_BAR);
+    lv_chart_set_range(tab2_chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100);
+    lv_chart_set_range(tab2_chart, LV_CHART_AXIS_SECONDARY_Y, 0, 400);
+    lv_chart_set_point_count(tab2_chart, 12);
+    // lv_obj_add_event_cb(tab2_chart, draw_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
+
+    /*Add ticks and label to every axis*/
+    lv_chart_set_axis_tick(tab2_chart, LV_CHART_AXIS_PRIMARY_X, 10, 5, 12, 3, true, 40);
+    lv_chart_set_axis_tick(tab2_chart, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 6, 2, true, 50);
+    lv_chart_set_axis_tick(tab2_chart, LV_CHART_AXIS_SECONDARY_Y, 10, 5, 3, 4, true, 50);
+
+    /*Zoom in a little in X*/
+    lv_chart_set_zoom_x(tab2_chart, 800);
+
+    /*Add two data series*/
+    lv_chart_series_t * ser1 = lv_chart_add_series(tab2_chart, lv_palette_lighten(LV_PALETTE_GREEN, 2), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_series_t * ser2 = lv_chart_add_series(tab2_chart, lv_palette_darken(LV_PALETTE_GREEN, 2), LV_CHART_AXIS_SECONDARY_Y);
+
+    /*Set the next points on 'ser1'*/
+    lv_chart_set_next_value(tab2_chart, ser1, 31);
+    lv_chart_set_next_value(tab2_chart, ser1, 66);
+    lv_chart_set_next_value(tab2_chart, ser1, 10);
+    lv_chart_set_next_value(tab2_chart, ser1, 89);
+    lv_chart_set_next_value(tab2_chart, ser1, 63);
+    lv_chart_set_next_value(tab2_chart, ser1, 56);
+    lv_chart_set_next_value(tab2_chart, ser1, 32);
+    lv_chart_set_next_value(tab2_chart, ser1, 35);
+    lv_chart_set_next_value(tab2_chart, ser1, 57);
+    lv_chart_set_next_value(tab2_chart, ser1, 85);
+    lv_chart_set_next_value(tab2_chart, ser1, 22);
+    lv_chart_set_next_value(tab2_chart, ser1, 58);
+
+    lv_coord_t * ser2_array =  lv_chart_get_y_array(tab2_chart, ser2);
+    /*Directly set points on 'ser2'*/
+    ser2_array[0] = 92;
+    ser2_array[1] = 71;
+    ser2_array[2] = 61;
+    ser2_array[3] = 15;
+    ser2_array[4] = 21;
+    ser2_array[5] = 35;
+    ser2_array[6] = 35;
+    ser2_array[7] = 58;
+    ser2_array[8] = 31;
+    ser2_array[9] = 53;
+    ser2_array[10] = 33;
+    ser2_array[11] = 73;
+
+    lv_chart_refresh(tab2_chart); /*Required after direct set*/
+   
 }
 
 
@@ -250,15 +323,21 @@ lv_color_t *color_p;
 lv_area_t area;
 lv_disp_drv_t *disp;
 
+extern uint32_t syncinterval;
 TaskHandle_t Task1;
 void codeForTask1(void *parameter)
 {
     for (;;)
     {
+        // if ((millis() > syncinterval+100))
+            lvgl_plot(), syncinterval = millis();
+
         lv_timer_handler();
-        vTaskDelay(10);
+        vTaskDelay(1);
     }
 }
+
+#ifdef INDEPENDANTFLUSHING
 TaskHandle_t Task2;
 volatile bool newdata = 0;
 void codeForTask2(void *parameter)
@@ -279,10 +358,12 @@ void codeForTask2(void *parameter)
         vTaskDelay(1);
     }
 }
+#endif
 
 /* Display flushing */
 void my_disp_flush(lv_disp_drv_t *dispp, const lv_area_t *areaa, lv_color_t *color_pp)
-{
+{   
+    #ifdef INDEPENDANTFLUSHING
     if (newdata == 0)
     {
         area = *areaa;
@@ -297,6 +378,15 @@ void my_disp_flush(lv_disp_drv_t *dispp, const lv_area_t *areaa, lv_color_t *col
 
         // lv_disp_flush_ready( disp );
     }
+    #else
+    uint32_t w = (areaa -> x2 - areaa -> x1 + 1);
+    uint32_t h = (areaa -> y2 - areaa -> y1 + 1);
+    tft.startWrite();
+    tft.setAddrWindow(areaa -> x1, areaa -> y1, w, h);
+    tft.pushColors((uint16_t *)&color_pp->full, w * h, true);
+    tft.endWrite();
+    lv_disp_flush_ready(dispp);
+    #endif
 }
 
 /*Read the touchpad*/
@@ -382,5 +472,8 @@ void lvgl_hmi_init()
     load_screen();
 
     xTaskCreatePinnedToCore(codeForTask1, "LVGL", 10000, NULL, 1, &Task1, 0);
+
+    #ifdef INDEPENDANTFLUSHING
     xTaskCreatePinnedToCore(codeForTask2, "LVGL flush", 10000, NULL, 1, &Task2, 1);
+    #endif
 }

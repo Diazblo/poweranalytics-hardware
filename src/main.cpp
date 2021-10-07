@@ -46,8 +46,8 @@ void loop()
     // if (WiFi.status() == WL_CONNECTED && (millis() > syncinterval+5000))
     //     wifi_h.pwanl_sync(), syncinterval = millis();
 
-    if ((millis() > syncinterval+100))
-        lvgl_plot(), syncinterval = millis();
+    // if ((millis() > syncinterval+100))
+    //     lvgl_plot(), syncinterval = millis();
 
 
     delay(1);
