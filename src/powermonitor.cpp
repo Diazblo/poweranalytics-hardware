@@ -40,11 +40,12 @@ void powermonitor_init(powermonitor_data * self)
     emon_ptr[struct_ptr_cnt].current(pwanl_arg2, 8.2); 
     struct_ptr_array[struct_ptr_cnt++] = self;
 
-    for(uint8_t i=0; i<10;   i++)
+    for(uint8_t i=0; i<30;   i++)
         emon_ptr[0].calcVI(20,200);
     xTaskCreatePinnedToCore(powermonitortask, "powermonitor", 10000, NULL, 2, &Task_powermonitor, 1);
 }
 
+#define ESTIMATION_RATE 0.700 //in kWh
 double pw_power = 0;
 double total_power = 0;
 double avg_power = 0;
@@ -86,6 +87,8 @@ void powermonitor_task()
 
         #if 1
         total_power += (avg_power / total_power_mult);
+        struct_ptr_array[0] -> esttotalpower += (ESTIMATION_RATE / total_power_mult);
+        struct_ptr_array[0] -> saving = ((struct_ptr_array[0] -> esttotalpower) - (struct_ptr_array[0] -> totalpower));
         #else
         total_power_cnt++; //add first to start with 1
         double total_power_frac = (double)(total_power_cnt-1)/total_power_cnt;
@@ -94,11 +97,11 @@ void powermonitor_task()
         double multt = (total_power_cnt)/(RATE_MULT);
         total_kwh = total_power * multt;
         #endif
+        struct_ptr_array[0] -> totalpower = total_power/1000;
     }
 
     struct_ptr_array[0] -> instpower  = pw_power;
     struct_ptr_array[0] -> avgpower   = avg_power;
-    struct_ptr_array[0] -> totalpower = total_power;
     struct_ptr_array[0] -> powerfactor  = emon_ptr[0].powerFactor;
     // Serial.printf("total average: %f\talt: %f \t%d \n", total_power, total_power_frac, total_power_cnt);
 }

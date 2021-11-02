@@ -7,12 +7,13 @@ struct powermonitor_data
 {
     double instpower;
     double totalpower;
+    double esttotalpower;
+    double saving;
     double powerfactor;
     double avgpower;
     double rmspower;
     double vrms;
-    double btrbtbrtb;
-    double yhyttbt;
+
     
 };
 

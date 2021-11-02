@@ -12,6 +12,7 @@ static lv_chart_series_t *tab1_ser;
 static lv_chart_cursor_t *cursor;
 static lv_obj_t *tab1_chart2;
 static lv_chart_series_t *tab1_ser2;
+static lv_chart_series_t *tab1_ser3;
 static lv_chart_cursor_t *cursor2;
 
 lv_obj_t * tab2_chart;
@@ -20,8 +21,20 @@ lv_obj_t * tab2_chart;
 #endif
 
 #define CHART_MAX 100
-#define PARAMS_PANEL_X 240
-#define PARAMS_PANEL_Y 10
+
+#define CHART_X 25
+#define CHART_Y 10
+#define CHART_HEIGHT 125
+#define CHART_WIDTH 150
+#define CHART_DISTANCE 35
+
+#define PARAMS_PANEL_DISTANCE 15
+#define PARAMS_PANEL_X CHART_X+CHART_WIDTH+PARAMS_PANEL_DISTANCE
+#define PARAMS_PANEL_DIV 95
+#define PARAMS_PANEL_HEIGHT 278
+#define PARAMS_PANEL_WIDTH 480-45-(PARAMS_PANEL_X)
+#define PARAMS_PANEL_Y CHART_Y
+
 #define PARAMS_PANEL_Y_DIST 36
 #define PARAMS_LABEL_DIST 120
 
@@ -42,6 +55,18 @@ void chart_auto_range( lv_obj_t *tab1_chart, lv_chart_series_t *ser_auto_range){
     for(uint8_t rr = 0; rr < CHART_MAX; rr++){
         if((chart_auto_range_max < (ser_auto_range->y_points[rr])) && (ser_auto_range->y_points[rr]) < var_type_max) chart_auto_range_max = (ser_auto_range->y_points[rr]);
         if(chart_auto_range_min > (ser_auto_range->y_points[rr])) chart_auto_range_min = (ser_auto_range->y_points[rr]);
+    }
+    lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_Y, chart_auto_range_min, chart_auto_range_max+10);//(chart_auto_range_max*0.1)
+}
+void chart_auto_range( lv_obj_t *tab1_chart, lv_chart_series_t *ser_auto_range, lv_chart_series_t *ser_auto_range1){
+    int16_t var_type_max = (1<<15) - 1;
+    int16_t chart_auto_range_max = 0, chart_auto_range_min = var_type_max;
+
+    for(uint8_t rr = 0; rr < CHART_MAX; rr++){
+        if((chart_auto_range_max < (ser_auto_range->y_points[rr])) && (ser_auto_range->y_points[rr]) < var_type_max) chart_auto_range_max = (ser_auto_range->y_points[rr]);
+        if(chart_auto_range_min > (ser_auto_range->y_points[rr])) chart_auto_range_min = (ser_auto_range->y_points[rr]);
+        if((chart_auto_range_max < (ser_auto_range1->y_points[rr])) && (ser_auto_range1->y_points[rr]) < var_type_max) chart_auto_range_max = (ser_auto_range1->y_points[rr]);
+        if(chart_auto_range_min > (ser_auto_range1->y_points[rr])) chart_auto_range_min = (ser_auto_range1->y_points[rr]);
     }
     lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_Y, chart_auto_range_min, chart_auto_range_max+10);//(chart_auto_range_max*0.1)
 }
@@ -74,7 +99,7 @@ void lvgl_plot()
         lv_label_set_text_fmt(params_panel[1], ":%d", );
         lv_label_set_text_fmt(params_panel[2], ":%d", (int)pwanl.totalpower);
         #else
-        #if 1
+        #ifdef SAVINGPANEL
         lv_table_set_cell_value_fmt(table, 0, 1, "%d W", (int)pwanl.instpower);
         lv_table_set_cell_value_fmt(table, 1, 1, "%d W", (int)pwanl.rmspower);
         String power_string = String(pwanl.totalpower, 4) + " kW";
@@ -83,10 +108,18 @@ void lvgl_plot()
         // lv_table_set_cell_value_fmt(table, 2, 1, "%d kWh", (int)pwanl.totalpower);
         // lv_table_set_cell_value_fmt(table, 3, 1, "%d", (int)(pwanl.powerfactor*100.0));
         #else
-        lv_table_set_cell_value(table, 0, 1, String(pwanl.instpower).c_str());
-        lv_table_set_cell_value(table, 1, 1, String(pwanl.avgpower).c_str());
-        lv_table_set_cell_value(table, 2, 1, String(pwanl.totalpower).c_str());
-        lv_table_set_cell_value(table, 3, 1, String(pwanl.powerfactor).c_str());
+        // lv_table_set_cell_value_fmt(table, 0, 1, "%d kWh", (int)pwanl.avgpower);
+        String avgpower_string = String((pwanl.avgpower/1000), 3) + " kWh";
+        lv_table_set_cell_value(table, 0, 1, avgpower_string.c_str() );
+
+        String power_string = String(pwanl.totalpower, 3) + " kW";
+        lv_table_set_cell_value(table, 1, 1, power_string.c_str() );
+
+        String est_power_string = String(pwanl.esttotalpower, 3) + " kW";
+        lv_table_set_cell_value(table, 2, 1, est_power_string.c_str() );
+
+        String saving_string = String(pwanl.saving, 3) + " kW";
+        lv_table_set_cell_value(table, 3, 1, saving_string.c_str() );
         #endif
 
         lv_obj_invalidate(table); //workaround to update table
@@ -102,11 +135,17 @@ void lvgl_plot()
         if(! plot_div-- ){
             plot_div = 10;
             lv_chart_set_next_value(tab1_chart, tab1_ser, peak_power);
-            lv_chart_set_next_value(tab1_chart, tab1_ser2, pwanl.rmspower);
             peak_power = 0;
-            
+            #ifdef SAVINGPANEL
+            lv_chart_set_next_value(tab1_chart, tab1_ser2, pwanl.rmspower);
+            #else
+            lv_chart_set_next_value(tab1_chart, tab1_ser2, (uint16_t)(pwanl.totalpower*1000));
+            lv_chart_set_next_value(tab1_chart, tab1_ser3, (uint16_t)(pwanl.esttotalpower*1000));
+            // chart_auto_range(tab1_chart2, tab1_ser3);
+            #endif
+
             chart_auto_range(tab1_chart, tab1_ser);
-            chart_auto_range(tab1_chart2, tab1_ser2);
+            chart_auto_range(tab1_chart2, tab1_ser2, tab1_ser3);
             
             lv_chart_refresh(tab1_chart);
             lv_chart_refresh(tab1_chart2);
@@ -162,8 +201,8 @@ void load_screen()
     */
     /* Peak Power chart */
     tab1_chart = lv_chart_create(tab1); //lv_scr_act()
-    lv_obj_set_size(tab1_chart, 200, 125);
-    lv_obj_align(tab1_chart, LV_ALIGN_TOP_LEFT, 25, 10);
+    lv_obj_set_size(tab1_chart, CHART_WIDTH, CHART_HEIGHT);
+    lv_obj_align(tab1_chart, LV_ALIGN_TOP_LEFT, CHART_X, CHART_Y);
     lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
     lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_X, 0, CHART_MAX);
     lv_chart_set_update_mode(tab1_chart, LV_CHART_UPDATE_MODE_SHIFT);
@@ -187,10 +226,10 @@ void load_screen()
     lv_obj_align_to(label, tab1_chart, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
 
-    /* Average Power chart*/
+    /* Second Power chart*/
     tab1_chart2 = lv_chart_create(tab1); //lv_scr_act()
-    lv_obj_set_size(tab1_chart2, 200, 125);
-    lv_obj_align(tab1_chart2, LV_ALIGN_BOTTOM_LEFT, 25, 0);
+    lv_obj_set_size(tab1_chart2, CHART_WIDTH, CHART_HEIGHT);
+    lv_obj_align(tab1_chart2, LV_ALIGN_TOP_LEFT, CHART_X, (CHART_HEIGHT+CHART_DISTANCE) );
     lv_chart_set_range(tab1_chart2, LV_CHART_AXIS_PRIMARY_Y, 0, 1600);
     lv_chart_set_range(tab1_chart2, LV_CHART_AXIS_PRIMARY_X, 0, CHART_MAX);
     lv_chart_set_update_mode(tab1_chart2, LV_CHART_UPDATE_MODE_SHIFT);
@@ -208,13 +247,17 @@ void load_screen()
     tab1_ser2 = lv_chart_add_series(tab1_chart2, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
     lv_chart_set_zoom_x(tab1_chart2, 250);
     lv_obj_t *label2 = lv_label_create(tab1); //vlv_scr_act()
-    lv_label_set_text(label2, "RMS Power (Watts)");
-    lv_obj_align_to(label2, tab1_chart2, LV_ALIGN_OUT_TOP_MID, 0, -5);
 
-    lv_obj_clear_flag(lv_tabview_get_content(tabview), LV_OBJ_FLAG_SCROLLABLE);    
     // lv_obj_scroll_to_view_recursive(label, LV_ANIM_OFF);
+    #if SAVINGPANEL
+    lv_label_set_text(label2, "RMS Power (Watts)");
+    #else
+    tab1_ser3 = lv_chart_add_series(tab1_chart2, lv_palette_main(LV_PALETTE_LIGHT_BLUE), LV_CHART_AXIS_PRIMARY_Y);
+    lv_label_set_text(label2, "Total Usage (Watts)");
+    #endif
 
-
+    lv_obj_align_to(label2, tab1_chart2, LV_ALIGN_OUT_TOP_MID, 0, -5);
+    lv_obj_clear_flag(lv_tabview_get_content(tabview), LV_OBJ_FLAG_SCROLLABLE);    
 
    
 
@@ -258,20 +301,20 @@ void load_screen()
      // STYLE
     static lv_style_t style_table;
     lv_style_init(&style_table);
-    lv_style_set_text_font(&style_table, &lv_font_unscii_16);
+    lv_style_set_text_font(&style_table, &lv_font_montserrat_16);
     
      /* Text Table*/
     table = lv_table_create(tab1);
-    lv_obj_set_height(table, 278);
-    lv_obj_set_width(table, 193);
-    lv_table_set_col_width(table, 0, 85);
-    lv_table_set_col_width(table, 1, 193-85);
+    lv_obj_set_height(table, PARAMS_PANEL_HEIGHT);
+    lv_obj_set_width(table, PARAMS_PANEL_WIDTH);
+    lv_table_set_col_width(table, 0, PARAMS_PANEL_DIV);
+    lv_table_set_col_width(table, 1, PARAMS_PANEL_WIDTH-PARAMS_PANEL_DIV+50);
     // lv_table_set_row_(table, 0, 100);
     lv_obj_add_flag(table, LV_STYLE_LINE_ROUNDED);
     lv_obj_set_scrollbar_mode(table, LV_SCROLLBAR_MODE_OFF);
     lv_obj_add_style(table,&style_table, 0);
 
-    
+    #if 0
     lv_table_set_cell_value(table, 0, 0, "Peak");
     lv_table_set_cell_value(table, 1, 0, "RMS");
     lv_table_set_cell_value(table, 2, 0, "Total");
@@ -281,17 +324,28 @@ void load_screen()
     lv_table_set_cell_value(table, 1, 1, "0");
     lv_table_set_cell_value(table, 2, 1, "10");
     lv_table_set_cell_value(table, 3, 1, "10");
+    #else
+    lv_table_set_cell_value(table, 0, 0, "Rate");
+    lv_table_set_cell_value(table, 1, 0, "Total");
+    lv_table_set_cell_value(table, 2, 0, "Est. Total");
+    lv_table_set_cell_value(table, 3, 0, "Saving");
 
+    lv_table_set_cell_value(table, 0, 1, "0");
+    lv_table_set_cell_value(table, 1, 1, "0");
+    lv_table_set_cell_value(table, 2, 1, "0");
+    lv_table_set_cell_value(table, 3, 1, "0");
+    #endif
+
+    lv_obj_set_x(table, PARAMS_PANEL_X);
+    lv_obj_set_y(table, PARAMS_PANEL_Y);
 
     /* Style */
     static lv_style_t style_common;
     lv_style_init(&style_common);
     
-    lv_style_set_text_font(&style_common, &lv_font_montserrat_20);
+    lv_style_set_text_font(&style_common, &lv_font_montserrat_18);
     lv_obj_add_style(table, &style_common, 0);
 
-    lv_obj_set_x(table, PARAMS_PANEL_X);
-    lv_obj_set_y(table, PARAMS_PANEL_Y);
 
     #endif
 

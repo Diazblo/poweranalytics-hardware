@@ -197,7 +197,8 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   Irms = I_RATIO * sqrt(sumI / numberOfSamples);
   
   // compensation for noise
-  if(Irms <0.040) Irms -= 0.016;
+  if(Irms <0.03) Irms = (Irms*Irms*Irms*Irms*Irms)/(0.03*0.03*0.03*0.03); //diminishes lower noisy counts
+  // if(Irms <0.03) Irms = (Irms*Irms*Irms)/0.03*0.03); //diminishes lower noisy counts
 
   //Calculation power values
   realPower = V_RATIO * I_RATIO * sumP / numberOfSamples;
