@@ -3,10 +3,13 @@
 
 #include <Arduino.h>
 
+#define UUID_KEY 24657844
+#define SERVER_LINK "http://poweranalytics.loca.lt/endpoint/"
 
 #define config_portal_timeout 200
 #define MAX_VARS 10
-#define powermonitor_sync_data_add(pinstance, pvar) pinstance.powermonitor_sync_data_name[pinstance.powermonitorno][10] = #pvar; pinstance.powermonitor_sync_ptr[pinstance.powermonitorno++] = & pvar;
+// #define powermonitor_sync_data_add(pinstance, pvar) pinstance.powermonitor_sync_data_name[pinstance.powermonitorno][10] = #pvar; pinstance.powermonitor_sync_ptr[pinstance.powermonitorno++] = & pvar;
+#define powermonitor_sync_data_add(pinstance, pvar) pinstance.powermonitor_sync_data_name[pinstance.powermonitorno] = #pvar; pinstance.powermonitor_sync_data_name[pinstance.powermonitorno].remove(0,pinstance.powermonitor_sync_data_name[pinstance.powermonitorno].indexOf('.')+1);  pinstance.powermonitor_sync_ptr[pinstance.powermonitorno++] = & pvar;
 
 /* functions */
 bool wifi_init();
@@ -19,11 +22,12 @@ class wifi_handler
         void pwanl_sync();
 
         int powermonitorno;
-        const char* powermonitor_sync_data_name[MAX_VARS][10];
+        // const char* powermonitor_sync_data_name[MAX_VARS][10];
+        String powermonitor_sync_data_name[MAX_VARS];
         double* powermonitor_sync_ptr[MAX_VARS];
 
     private:
-        String serverName = "http://poweranalytics.loca.lt/endpoint/";
+        String serverName = SERVER_LINK;
 
         const char* root_ca= \
         "-----BEGIN CERTIFICATE-----\n" \

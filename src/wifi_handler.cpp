@@ -21,14 +21,13 @@ bool wifi_init()
   delay(1000);
   MDNS.begin(host);
 
-  DBG.print("Trying to connect : ");
-  DBG.print(WiFi.SSID());
-  DBG.print("   ::");
+
   uint8_t wait_counter = 0;
   while (WiFi.status() != WL_CONNECTED && (wait_counter++) < 20)
   {
     delay(500);
-    DBG.print(".");
+    DBG.print("Trying to connect : ");
+    DBG.println(WiFi.SSID());
   }
   DBG.println();
   MDNS.begin(host);
@@ -94,15 +93,15 @@ void wifi_handler::pwanl_sync()
 
 	String httpRequestData = "{";
     httpRequestData += "\"api_key\":\"";
-    httpRequestData += String(4658464) + "\",";
+    httpRequestData += String(UUID_KEY) + "\",";
 
 		
 		for(uint8_t i=0; i<powermonitorno; i++){
-			httpRequestData += "\"" + String(powermonitor_sync_data_name[i][10]) + "\":\"" + String(*powermonitor_sync_ptr[i]) + "\",";
+			httpRequestData += "\"" + powermonitor_sync_data_name[i] + "\":\"" + String(*powermonitor_sync_ptr[i],3) + "\",";
     	}
 
-    httpRequestData += "\"cpu\":\"";
-    httpRequestData += String(random(100)) + "\"";
+    // httpRequestData += "\"cpu\":\"";
+    // httpRequestData += String(random(100)) + "\"";
     httpRequestData += "}";
 
   Serial.print("HTTP Request data: ");
