@@ -72,7 +72,7 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   #endif
 
   unsigned int crossCount = 0;                             //Used to measure number of times threshold is crossed.
-  unsigned int numberOfSamples = 0;                        //This is now incremented
+  numberOfSamples = 0;                        //This is now incremented
 
   //-------------------------------------------------------------------------------------------------------------------------
   // 1) Waits for the waveform to be close to 'zero' (mid-scale adc) part in sin curve.
@@ -84,7 +84,7 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   while(st==false)                                   //the while loop...
   {
     startV = analogRead(inPinV);                    //using the voltage waveform
-    if ((startV < (ADC_COUNTS*0.55)) && (startV > (ADC_COUNTS*0.45))) st=true;  //check its within range
+    if ((startV < (ADC_COUNTS*0.51)) && (startV > (ADC_COUNTS*0.49))) st=true;  //check its within range
     if ((millis()-start)>timeout) st = true;
   }
 
@@ -92,8 +92,41 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   // 2) Main measurement loop
   //-------------------------------------------------------------------------------------------------------------------------
   start = millis();
-
+  static uint16_t sample_buffer_max = 1000;
+  static uint16_t adc_delay = 70;
+  static float adc_avg = 0.50;
+  uint16_t sampleI_buffer[sample_buffer_max];
+  uint16_t sampleV_buffer[sample_buffer_max];
+  uint16_t sample_count_total = 0;
   while ((crossCount < crossings) && ((millis()-start)<timeout))
+  {
+    sampleI_buffer[sample_count_total] = analogRead(inPinI);                 //Read in raw current signal
+    delayMicroseconds(adc_delay);
+    sampleV_buffer[sample_count_total] = analogRead(inPinV);                 //Read in raw voltage signal
+    delayMicroseconds(adc_delay);
+
+    // Averaging
+    #if 0
+    if(0)
+    {
+      sampleI_buffer[sample_count_total] =  (sampleI_buffer[sample_count_total]*(1-adc_avg)) +  (sampleI_buffer[sample_count_total-1]*adc_avg);
+      sampleV_buffer[sample_count_total] = (sampleV_buffer[sample_count_total]*(1-adc_avg)) +  (sampleV_buffer[sample_count_total-1]*adc_avg);
+    }
+    #endif
+
+    lastVCross = checkVCross;
+    if (sampleV_buffer[sample_count_total] > startV) checkVCross = true;
+                     else checkVCross = false;
+    if (numberOfSamples==1) lastVCross = checkVCross;
+
+    if (lastVCross != checkVCross) crossCount++;
+
+    sample_count_total++;
+    if(sample_count_total>sample_buffer_max) break;
+
+   
+  }
+  for(uint16_t samples_count=0; samples_count<sample_count_total; samples_count++)
   {
     numberOfSamples++;                       //Count number of times looped.
     lastFilteredV = filteredV;               //Used for delay/phase compensation
@@ -101,17 +134,19 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
     //-----------------------------------------------------------------------------
     // A) Read in raw voltage and current samples
     //-----------------------------------------------------------------------------
-    sampleV = analogRead(inPinV);                 //Read in raw voltage signal
-    sampleI = analogRead(inPinI);                 //Read in raw current signal
+    // sampleI = analogRead(inPinI);                 //Read in raw current signal
+    // delayMicroseconds(20);
+    // sampleV = analogRead(inPinV);                 //Read in raw voltage signal
+    // delayMicroseconds(20);
 
     //-----------------------------------------------------------------------------
     // B) Apply digital low pass filters to extract the 2.5 V or 1.65 V dc offset,
     //     then subtract this - signal is now centred on 0 counts.
     //-----------------------------------------------------------------------------
-    offsetV = offsetV + ((sampleV-offsetV)/1024);
-    filteredV = sampleV - offsetV;
-    offsetI = offsetI + ((sampleI-offsetI)/1024);
-    filteredI = sampleI - offsetI;
+    offsetV = offsetV + ((sampleV_buffer[samples_count]-offsetV)/1024);
+    filteredV = sampleV_buffer[samples_count] - offsetV;
+    offsetI = offsetI + ((sampleI_buffer[samples_count]-offsetI)/1024);
+    filteredI = sampleI_buffer[samples_count] - offsetI;
 
     //-----------------------------------------------------------------------------
     // C) Root-mean-square method voltage
@@ -141,12 +176,12 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
     //    - every 2 crosses we will have sampled 1 wavelength
     //    - so this method allows us to sample an integer number of half wavelengths which increases accuracy
     //-----------------------------------------------------------------------------
-    lastVCross = checkVCross;
-    if (sampleV > startV) checkVCross = true;
-                     else checkVCross = false;
-    if (numberOfSamples==1) lastVCross = checkVCross;
+    // lastVCross = checkVCross;
+    // if (sampleV > startV) checkVCross = true;
+    //                  else checkVCross = false;
+    // if (numberOfSamples==1) lastVCross = checkVCross;
 
-    if (lastVCross != checkVCross) crossCount++;
+    // if (lastVCross != checkVCross) crossCount++;
   }
 
   //-------------------------------------------------------------------------------------------------------------------------
@@ -160,6 +195,9 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
 
   double I_RATIO = ICAL *((SupplyVoltage/1000.0) / (ADC_COUNTS));
   Irms = I_RATIO * sqrt(sumI / numberOfSamples);
+  
+  // compensation for noise
+  if(Irms <0.040) Irms -= 0.016;
 
   //Calculation power values
   realPower = V_RATIO * I_RATIO * sumP / numberOfSamples;
@@ -212,15 +250,19 @@ double EnergyMonitor::calcIrms(unsigned int Number_of_Samples)
 
 void EnergyMonitor::serialprint()
 {
-  Serial.print(realPower);
-  Serial.print(' ');
-  Serial.print(apparentPower);
-  Serial.print(' ');
-  Serial.print(Vrms);
-  Serial.print(' ');
-  Serial.print(Irms);
-  Serial.print(' ');
-  Serial.print(powerFactor);
+  Serial.print(realPower,1);
+  Serial.print("\t");
+  Serial.print(apparentPower,1);
+  Serial.print("\t");
+  Serial.print(Vrms,2);
+  Serial.print("\t");
+  Serial.print(Irms,3);
+  Serial.print("\t");
+  Serial.print(powerFactor,2);
+  Serial.print("\t");
+  Serial.print(offsetV,2);
+  Serial.print("\t");
+  Serial.print(offsetI,2);
   Serial.println(' ');
   delay(100);
 }

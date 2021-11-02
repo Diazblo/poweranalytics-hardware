@@ -43,7 +43,7 @@ void chart_auto_range( lv_obj_t *tab1_chart, lv_chart_series_t *ser_auto_range){
         if((chart_auto_range_max < (ser_auto_range->y_points[rr])) && (ser_auto_range->y_points[rr]) < var_type_max) chart_auto_range_max = (ser_auto_range->y_points[rr]);
         if(chart_auto_range_min > (ser_auto_range->y_points[rr])) chart_auto_range_min = (ser_auto_range->y_points[rr]);
     }
-    lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_Y, chart_auto_range_min, chart_auto_range_max+(chart_auto_range_max*0.1));
+    lv_chart_set_range(tab1_chart, LV_CHART_AXIS_PRIMARY_Y, chart_auto_range_min, chart_auto_range_max+10);//(chart_auto_range_max*0.1)
 }
 
 bool pause_plot = 0;
@@ -74,10 +74,21 @@ void lvgl_plot()
         lv_label_set_text_fmt(params_panel[1], ":%d", );
         lv_label_set_text_fmt(params_panel[2], ":%d", (int)pwanl.totalpower);
         #else
+        #if 1
         lv_table_set_cell_value_fmt(table, 0, 1, "%d W", (int)pwanl.instpower);
-        lv_table_set_cell_value_fmt(table, 1, 1, "%d W", (int)pwanl.avgpower);
-        lv_table_set_cell_value_fmt(table, 2, 1, "%d kWh", (int)pwanl.totalpower);
-        
+        lv_table_set_cell_value_fmt(table, 1, 1, "%d W", (int)pwanl.rmspower);
+        String power_string = String(pwanl.totalpower, 4) + " kW";
+        lv_table_set_cell_value(table, 2, 1, power_string.c_str() );
+        lv_table_set_cell_value(table, 3, 1, String(pwanl.powerfactor).c_str());
+        // lv_table_set_cell_value_fmt(table, 2, 1, "%d kWh", (int)pwanl.totalpower);
+        // lv_table_set_cell_value_fmt(table, 3, 1, "%d", (int)(pwanl.powerfactor*100.0));
+        #else
+        lv_table_set_cell_value(table, 0, 1, String(pwanl.instpower).c_str());
+        lv_table_set_cell_value(table, 1, 1, String(pwanl.avgpower).c_str());
+        lv_table_set_cell_value(table, 2, 1, String(pwanl.totalpower).c_str());
+        lv_table_set_cell_value(table, 3, 1, String(pwanl.powerfactor).c_str());
+        #endif
+
         lv_obj_invalidate(table); //workaround to update table
         // lv_event_send(table, LV_EVENT_DRAW_PART_END, NULL);
         // refr_size(table);
@@ -91,7 +102,7 @@ void lvgl_plot()
         if(! plot_div-- ){
             plot_div = 10;
             lv_chart_set_next_value(tab1_chart, tab1_ser, peak_power);
-            lv_chart_set_next_value(tab1_chart, tab1_ser2, pwanl.avgpower);
+            lv_chart_set_next_value(tab1_chart, tab1_ser2, pwanl.rmspower);
             peak_power = 0;
             
             chart_auto_range(tab1_chart, tab1_ser);
@@ -244,21 +255,27 @@ void load_screen()
     lv_label_set_text_fmt(params_label[2], "Total");
     #else
 
+     // STYLE
+    static lv_style_t style_table;
+    lv_style_init(&style_table);
+    lv_style_set_text_font(&style_table, &lv_font_unscii_16);
+    
      /* Text Table*/
     table = lv_table_create(tab1);
     lv_obj_set_height(table, 278);
     lv_obj_set_width(table, 193);
-    lv_table_set_col_width(table, 0, 96);
-    lv_table_set_col_width(table, 1, 193-100+10);
+    lv_table_set_col_width(table, 0, 85);
+    lv_table_set_col_width(table, 1, 193-85);
     // lv_table_set_row_(table, 0, 100);
     lv_obj_add_flag(table, LV_STYLE_LINE_ROUNDED);
     lv_obj_set_scrollbar_mode(table, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_add_style(table,&style_table, 0);
 
     
-    lv_table_set_cell_value(table, 0, 0, "Power");
+    lv_table_set_cell_value(table, 0, 0, "Peak");
     lv_table_set_cell_value(table, 1, 0, "RMS");
     lv_table_set_cell_value(table, 2, 0, "Total");
-    lv_table_set_cell_value(table, 3, 0, "Pf (0)");
+    lv_table_set_cell_value(table, 3, 0, "PF");
 
     lv_table_set_cell_value(table, 0, 1, "0");
     lv_table_set_cell_value(table, 1, 1, "0");
@@ -350,14 +367,14 @@ lv_color_t *color_p;
 lv_area_t area;
 lv_disp_drv_t *disp;
 
-extern uint32_t syncinterval;
+uint32_t lvgl_plot_interval = 0;
 TaskHandle_t Task1;
 void codeForTask1(void *parameter)
 {
     for (;;)
     {
-        // if ((millis() > syncinterval+100))
-            lvgl_plot(), syncinterval = millis();
+        // if ((millis() > lvgl_plot_interval+100))
+            lvgl_plot(), lvgl_plot_interval = millis();
 
         lv_timer_handler();
         vTaskDelay(10);
@@ -419,7 +436,7 @@ void my_disp_flush(lv_disp_drv_t *dispp, const lv_area_t *areaa, lv_color_t *col
 /*Read the touchpad*/
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
-#if 1
+#if 0
     uint16_t touchX, touchY;
 
     // bool touched = tft.getTouch( &touchX, &touchY, 600 );
@@ -498,7 +515,7 @@ void lvgl_hmi_init()
     // lv_demo_benchmark();
     load_screen();
 
-    xTaskCreatePinnedToCore(codeForTask1, "LVGL", 10000, NULL, 1, &Task1, 0);
+    xTaskCreatePinnedToCore(codeForTask1, "LVGL", 10000, NULL, 1, &Task1, 1);
 
     #ifdef INDEPENDANTFLUSHING
     xTaskCreatePinnedToCore(codeForTask2, "LVGL flush", 10000, NULL, 1, &Task2, 1);

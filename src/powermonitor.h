@@ -9,6 +9,7 @@ struct powermonitor_data
     double totalpower;
     double powerfactor;
     double avgpower;
+    double rmspower;
     double vrms;
     double btrbtbrtb;
     double yhyttbt;

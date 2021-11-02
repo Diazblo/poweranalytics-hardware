@@ -1,0 +1,50 @@
+adcAttachPin(32);
+    analogSetAttenuation(ADC_0db);
+    // analogReadResolution(resolution);
+    // analogSetWidth(width);
+    while(1){
+        Serial.println(analogRead(32)); delay(200);
+    }
+
+    uint8_t pins[] = {21, 23, 25, 26, 18, 19, 23, 22, 14,12,13,15,4,32};
+    uint16_t size = sizeof pins / sizeof pins[0];
+    bool state = 0;
+    for (uint8_t i = 0; i < size; i++)
+    pinMode(pins[i], OUTPUT);
+    while(1){
+        state = !state;
+        Serial.print(state);
+        Serial.print(": ");
+        for (uint8_t i = 0; i < size; i++) {
+            digitalWrite(pins[i], state);
+            Serial.print(pins[i]);
+            Serial.print(" ");
+        }
+        Serial.println();
+        delay(1000);
+    }
+
+// The ESP32 and TFT the pins used for testing are:
+#define TFT_CS   22  // Chip select control pin (library pulls permanently low
+#define TFT_DC   26  // Data Command control pin - must use a pin in the range 0-31
+#define TFT_RST  25  // Reset pin, toggles on startup
+
+#define TFT_WR    4  // Write strobe control pin - must use a pin in the range 0-31
+#define TFT_RD    17  // Read strobe control pin
+
+#define TFT_D0   19  // Must use pins in the range 0-31 for the data bus
+#define TFT_D1   18  // so a single register write sets/clears all bits.
+#define TFT_D2   14  // Pins can be randomly assigned, this does not affect
+#define TFT_D3   12  // TFT screen update performance.
+#define TFT_D4   15
+#define TFT_D5   13
+#define TFT_D6   4
+#define TFT_D7   23
+
+sck miso mosi cs2
+18 19 23 4
+
+#define TFT_D0   14  // Must use pins in the range 0-31 for the data bus
+#define TFT_D1   12  // so a single register write sets/clears all bits.
+#define TFT_D2   15  // Pins can be randomly assigned, this does not affect
+#define TFT_D3   13  

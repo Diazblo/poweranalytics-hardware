@@ -36,7 +36,7 @@
 #if defined(__arm__)
 #define ADC_BITS    12
 #else
-#define ADC_BITS    10
+#define ADC_BITS    12
 #endif
 
 #define ADC_COUNTS  (1<<ADC_BITS)
@@ -63,6 +63,7 @@ class EnergyMonitor
       powerFactor,
       Vrms,
       Irms;
+      unsigned int numberOfSamples; 
 
   private:
 
