@@ -72,9 +72,14 @@ void powermonitor_task()
 
     // pw_power = random(0, 700);
     // if(!(total_power_cnt % 20)) pw_power = random(1000, 1600);
-
+    #ifndef DEVMODE
     //Totals power from all phases
     pw_power = emon_ptr[0].apparentPower;
+    #else
+    //Totals power from all phases
+    pw_power = random(0, 700);
+    #endif
+
 
     rms_power_sum = ( (pw_power*pw_power*0.03) + (rms_power_sum*0.97) );
     struct_ptr_array[0] -> rmspower   = sqrt(rms_power_sum);

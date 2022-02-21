@@ -90,37 +90,29 @@ void wifi_handler::pwanl_sync()
 	WiFiClient client;
 	HTTPClient http;
 
-	// Your Domain name with URL path or IP address with path
+	// Begin
 	http.begin(client, serverName);
 
-	// Specify content-type header
-	// http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-	http.addHeader("Content-Type", "application/json");
-	// Data to send with HTTP POST
+	http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+	
+  // Encode data from array
+  String httpRequestData = "apikey=" + String(chipid);
+  for(uint8_t i=0; i<powermonitorno; i++){
+    httpRequestData += "&" + powermonitor_sync_data_name[i] + "=" + String(*powermonitor_sync_ptr[i],3);
+  }
 
-	String httpRequestData = "{";
-    httpRequestData += "\"api_key\":\"";
-    httpRequestData += String(chipid) + "\",";
-
-		
-		for(uint8_t i=0; i<powermonitorno; i++){
-			httpRequestData += "\"" + powermonitor_sync_data_name[i] + "\":\"" + String(*powermonitor_sync_ptr[i],3) + "\",";
-    	}
-
-    // httpRequestData += "\"cpu\":\"";
-    // httpRequestData += String(random(100)) + "\"";
-    httpRequestData += "}";
-
-  Serial.print("HTTP Request data: ");
-	Serial.println(httpRequestData);
 	// Send HTTP POST request
 	int httpResponseCode = http.POST(httpRequestData);
 
-	Serial.print("HTTP Response code: ");
-	Serial.println(httpResponseCode);
-
 	// Free resources
 	http.end();
+
+  // Debug
+  V_PRINT("HTTP Request data: ");
+	V_PRINTln(httpRequestData);
+	V_PRINT("HTTP Response code: ");
+	V_PRINTln(httpResponseCode);
+
 }
 
 
@@ -230,6 +222,7 @@ void start_config_portal() {
   DBG.println("connected...)");
 }
 
+  httpRequestData = "api_key=" + String(32687632) + "&field1=" + String(random(50));   
 bool connection_message_not_sent = 0;
 unsigned long wifi_reconnect_timer = 0;
 #define WIFI_RECONNECT_DELAY 5000

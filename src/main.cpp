@@ -18,10 +18,11 @@ void setup()
     Serial.begin(115200); /* prepare for possible serial debug */
 
 
-    // delay(1000);
-
+    #ifndef DEVMODE
     lvgl_hmi_init();
     powermonitor_init(&pwanl);
+    #else
+    #endif
     powermonitor_sync_data_add(wifi_h, pwanl.avgpower);
     powermonitor_sync_data_add(wifi_h, pwanl.powerfactor);
     powermonitor_sync_data_add(wifi_h, pwanl.totalpower);
@@ -29,14 +30,15 @@ void setup()
 
     if (!wifi_init())
         start_config_portal();
-    // for()
-    // {
-
-    // }
+        
 }
 
 void loop()
 {
+    #ifndef DEVMODE
+    #else
+    powermonitor_task();
+    #endif
     // powermonitor_task();
     //pwanl_sync() on intervals
     if (WiFi.status() == WL_CONNECTED && (millis() > syncinterval+20000)) wifi_h.pwanl_sync(), syncinterval = millis();
