@@ -42,10 +42,10 @@ void powermonitor_init(powermonitor_data * self)
 
     for(uint8_t i=0; i<30;   i++)
         emon_ptr[0].calcVI(20,200);
-    xTaskCreatePinnedToCore(powermonitortask, "powermonitor", 10000, NULL, 2, &Task_powermonitor, 1);
+    xTaskCreatePinnedToCore(powermonitortask, "powermonitor", 10000, NULL, 3, &Task_powermonitor, 1);
 }
 
-#define ESTIMATION_RATE 0.700 //in kWh
+#define ESTIMATION_RATE 7.500 //in kWh
 double pw_power = 0;
 double total_power = 0;
 double avg_power = 0;

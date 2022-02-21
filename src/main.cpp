@@ -5,7 +5,7 @@
 #include <powermonitor.h>
 #include <preprocessor.h>
 
-const char *host = "poweranalytics";
+
 uint32_t syncinterval = 0;
 
 powermonitor_data pwanl;
@@ -39,8 +39,9 @@ void loop()
 {
     // powermonitor_task();
     //pwanl_sync() on intervals
-    if (WiFi.status() == WL_CONNECTED && (millis() > syncinterval+5000)) wifi_h.pwanl_sync(), syncinterval = millis();
+    if (WiFi.status() == WL_CONNECTED && (millis() > syncinterval+20000)) wifi_h.pwanl_sync(), syncinterval = millis();
     // if ((millis() > syncinterval+100))
     //     lvgl_plot(), syncinterval = millis();
-    delay(1000);
+    server_loop();
+    delay(5000);
 }

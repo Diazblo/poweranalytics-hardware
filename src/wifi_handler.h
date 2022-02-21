@@ -14,7 +14,8 @@
 /* functions */
 bool wifi_init();
 void start_config_portal();
-
+void server_init();
+void server_loop();
 
 class wifi_handler
 {

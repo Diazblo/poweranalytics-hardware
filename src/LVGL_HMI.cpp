@@ -129,7 +129,7 @@ void lvgl_plot()
 
 
         if (pwanl.instpower > peak_power){
-            peak_power = pwanl.instpower;
+            peak_power = pwanl.avgpower;
             
         }
         if(! plot_div-- ){

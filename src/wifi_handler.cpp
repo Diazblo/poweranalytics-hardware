@@ -7,19 +7,25 @@ int timeout = 200;       // seconds to run for
 WiFiManager wm;
 extern const char *host;
 
-#include <ESPmDNS.h>
+// #include <ESPmDNS.h>
 #include <powermonitor.h>
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-
+uint16_t chipid;
+void get_api_key(){
+  for(int i=0; i<17; i=i+8) {
+	  chipid |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+	}
+}
 bool wifi_init()
 {
+  get_api_key();
   WiFi.mode(WIFI_STA);
   WiFi.begin();
   delay(1000);
-  MDNS.begin(host);
+  // MDNS.begin(host);
 
 
   uint8_t wait_counter = 0;
@@ -30,7 +36,7 @@ bool wifi_init()
     DBG.println(WiFi.SSID());
   }
   DBG.println();
-  MDNS.begin(host);
+  // MDNS.begin(host);
   if (WiFi.status() != WL_CONNECTED)
   {
     DBG.println("Failed to connect. Please enter config mode to enter correct credentials");
@@ -39,6 +45,7 @@ bool wifi_init()
   else
   {
     DBG.println(WiFi.localIP());
+    server_init();
     return 1;
   }
 }
@@ -93,7 +100,7 @@ void wifi_handler::pwanl_sync()
 
 	String httpRequestData = "{";
     httpRequestData += "\"api_key\":\"";
-    httpRequestData += String(UUID_KEY) + "\",";
+    httpRequestData += String(chipid) + "\",";
 
 		
 		for(uint8_t i=0; i<powermonitorno; i++){
@@ -117,6 +124,71 @@ void wifi_handler::pwanl_sync()
 }
 
 
+//********************Server**************************
+#include <WebServer.h>
+#include <Update.h>
+#include <ESPmDNS.h>
+const char* host = "poweranalytics";
+const char* serverIndex = "<form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>";
+WebServer server(80);
+
+void handleNotFound()
+{
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET)?"GET":"POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+  for (uint8_t i=0; i<server.args(); i++){
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  server.send(404, "text/plain", message);
+}
+
+void server_init()
+{
+  server.onNotFound(handleNotFound);
+
+  server.on("/", HTTP_GET, []() {
+      server.sendHeader("Connection", "close");
+      server.send(200, "text/html", serverIndex);
+    });
+    server.on("/update", HTTP_POST, []() {
+      server.sendHeader("Connection", "close");
+      server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
+      ESP.restart();
+    }, []() {
+      HTTPUpload& upload = server.upload();
+      if (upload.status == UPLOAD_FILE_START) {
+        DBG.setDebugOutput(true);
+        DBG.printf("Update: %s\n", upload.filename.c_str());
+        if (!Update.begin()) { //start with max available size
+          Update.printError(Serial);
+        }
+      } else if (upload.status == UPLOAD_FILE_WRITE) {
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+          Update.printError(Serial);
+        }
+      } else if (upload.status == UPLOAD_FILE_END) {
+        if (Update.end(true)) { //true to set the size to the current progress
+          DBG.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+        } else {
+          Update.printError(Serial);
+        }
+        DBG.setDebugOutput(false);
+      }
+    });
+
+  server.begin();
+  MDNS.begin(host);
+}
+void server_loop()
+{
+  server.handleClient();
+}
 
 
 /*------------------------------------------------------------------------------------------------
